@@ -16,22 +16,28 @@ class TestViewHandler(unittest.TestCase):
         assert(isinstance(self.mentioned_views,list))
 		
     def test_views_mapping(self):
-	view1 = self.mentioned_views[0]
-	view2 = self.mentioned_views[1]
-	assert(view1 == 'view1')
-	assert(view2 == 'view2')
+		view1 = self.mentioned_views[0]
+		view2 = self.mentioned_views[1]
+		assert(view1 == 'view1')
+		assert(view2 == 'view2')
 		
     def test_views_length(self):
-	length = len(self.mentioned_views)
-	assert(length == 2)
+		length = len(self.mentioned_views)
+		assert(length == 2)
 		
     def test_attributes_belong_to_root(self):
-	root_view = given_views[mentioned_views[0]]
-	assert(attributes in root_view)
+		root_view = given_views[self.mentioned_views[0]]
+		assert(self.attributes in root_view)
     
     def test_attributes_mapping(self):
         attr1 = self.attributes[0]
         attr2 = self.attributes[1]
-        assert(attr1 = given_views['view1'][0])
-        assert(attr2 = given_views['view1'][1])
+        assert(attr1 == given_views['view1'][0])
+        assert(attr2 == given_views['view1'][1])
+        
+    def test_A3_not_in_attributes(self):
+    	check_attr = False
+    	if('A3' in self.attributes):
+    		check_attr = True
+    	assert(check_attr == False)
 	

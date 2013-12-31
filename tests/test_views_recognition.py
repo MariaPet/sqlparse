@@ -12,20 +12,27 @@ handler = v.ViewHandler()
 
 class TestViewHandler(unittest.TestCase):
 
-	mentioned_views = dict(handler.views_in_from(sql,given_views))
+	matched_views = dict(handler.views_in_from(sql,given_views))
 	identifier_list = handler.get_identifiers(tokenList)
-	attributes = handler.get_view_attributes(tokenList,mentioned_views['view1'])
+	attributes = handler.get_view_attributes(tokenList,matched_views['view1'])
 #---------------------------------------------------------------------------------	
 	def test_views_type(self):
-		assert(isinstance(self.mentioned_views,list))
+		assert(isinstance(self.matched_views,dict))
 		
 	def test_views_mapping(self):
-		for view in self.mentioned_views.keys():
+		for view in self.matched_views.keys():
 			assert(view in given_views)
-		
+			
+	def test_view3_not_in_matched_views(self):
+		assert('view3' not in self.matched_views)
+					
 	def test_views_length(self):
-		length = len(self.mentioned_views)
+		length = len(self.matched_views)
 		assert(length == 2)
+	
+	def test_matched_views_aliases(self):
+		assert(self.matched_views['view1'] == 'v1')
+		assert(self.matched_views['view2'] == 'v2')
 #----------------------------------------------------------------------------------
 
 	def test_get_identifiers_class(self):
@@ -37,7 +44,7 @@ class TestViewHandler(unittest.TestCase):
 	
 #----------------------------------------------------------------------------------	
 	def test_attributes_belong_to_root(self):
-		root_view = given_views[self.mentioned_views[0]]
+		root_view = given_views[self.matched_views[0]]
 		assert(self.attributes in root_view)
     
 	def test_attributes_mapping(self):

@@ -12,18 +12,16 @@ handler = v.ViewHandler()
 
 class TestViewHandler(unittest.TestCase):
 
-	mentioned_views = list(handler.views_in_from(sql,given_views))
+	mentioned_views = dict(handler.views_in_from(sql,given_views))
 	identifier_list = handler.get_identifiers(tokenList)
-	attributes = list(handler.get_view_attributes(sql,mentioned_views[0]))
+	attributes = handler.get_view_attributes(tokenList,mentioned_views['view1'])
 #---------------------------------------------------------------------------------	
 	def test_views_type(self):
 		assert(isinstance(self.mentioned_views,list))
 		
 	def test_views_mapping(self):
-		view1 = self.mentioned_views[0]
-		view2 = self.mentioned_views[1]
-		assert(view1 == 'view1')
-		assert(view2 == 'view2')
+		for view in self.mentioned_views.keys():
+			assert(view in given_views)
 		
 	def test_views_length(self):
 		length = len(self.mentioned_views)

@@ -14,38 +14,49 @@ class ViewHandler(object):
 				if(previous.normalized == 'FROM' and previous.ttype==tokens.Token.Keyword):
 					for subtoken in token.get_sublists():
 						if(isinstance(subtoken,sql.Identifier)):
+							view_alias = None
 							view_name = subtoken.get_real_name()
+							if(subtoken.has_alias()):
+								view_alias = subtoken.get_alias()
 							if(view_name in given_views):
-								yield view_name.__str__()
-		 	
-	def get_view_attributes(self,statement,view):
-		"""returns all the attributes mentioned in a query that belong to a given view"""
-		parsed=sqlparse.parse(statement)#this a tuple of Statement objects
-		token_list = sql.TokenList(parsed[0].tokens)
-		
-		#pairnei to alias tis view an exei, mporei na ginei ksexwristi methodos
-		for token in token_list.tokens:
-			if(isinstance(token,sql.IdentifierList)):
-				for identifier in token.get_sublists:
-					if(isinstance(identifier,sql.Identifier) and identifier.has_alias()):
-						view = identifier.get_alias()
-	
+								yield view_name.__str__(),view_alias.__str__()
 	
 	def get_identifiers(self,token_list,identifiers_list=[])	:
-		""" recursive method that fetch identifiers from a token list"""			
-		#sygentrwnei ola ta identifier tokens pou vriskei sto query			
+		""" recursive method that fetches identifiers from a token list"""						
 		for token in token_list.tokens:
 			if(isinstance(token,sql.Identifier)):
 				identifiers_list.append(token)
 			if(token.is_group()):
-				for identifier in token.get_sublists():#autos o elexos stin periptwsi twn identifier nom einai mia keni lista
+				for identifier in token.get_sublists():
 					if(isinstance(identifier,sql.Identifier)):
 						identifiers_list.append(identifier)
 						identifiers_list=(self.get_identifiers(identifier,identifiers_list))
 					elif(identifier.is_group()):
 						identifiers_list=(self.get_identifiers(identifier,identifiers_list))
 		return identifiers_list
-    	
+	
+	
+	
+	def get_view_attributes(self,token_list,view):
+		"""returns all the attributes mentioned in a query that belong to a given view"""
+		#parsed=sqlparse.parse(statement)#this a tuple of Statement objects
+		#token_list = sql.TokenList(parsed[0].tokens)
+		
+		#pairnei to alias tis view an exei, mporei na ginei ksexwristi methodos
+		for token in token_list.tokens:
+			if(isinstance(token,sql.IdentifierList)):
+				print 'to token einai I dentifierList : ',token
+				for identifier in token.get_sublists():
+					print 'sublist :',identifier
+					if(isinstance(identifier,sql.Identifier) and identifier.has_alias()):
+						if(identifier.get_real_name()==view):
+							view_alias = identifier.get_alias()
+							return view_alias
+					else:
+						print 'den exei alias'
+						return view 
+		#yield view
+		    	
 class GeneratedView(object):
 
     root=None
@@ -73,10 +84,12 @@ class GeneratedView(object):
             
 test = ViewHandler()
 given_views = {'view1':('A1','A2','A3'),'view2':('A1','A2','A3','A4'),'view3':('A1','A2','A4')}
-sql_test = 'select v1.name as nom,V2.code,count(V2.id) from view1 as v1, view2 as v2 where v1.code like "12345" group by nom;'
-print list(test.views_in_from(sql_test,given_views))
+sql_test = 'select v1.name as nom,V2.code,count(V2.id) from view1 as v1, view2 where v1.code like "12345" group by nom;'
+print dict(test.views_in_from(sql_test,given_views))
 parsed = sqlparse.parse(sql_test)
 tokenlist = sql.TokenList(parsed[0].tokens)
 identifiers = test.get_identifiers(tokenlist)
 for x,token in enumerate(identifiers):
 	print x, " ",token.normalized,' ',token.__class__.__name__
+	
+print test.get_view_attributes(tokenlist,'view1')

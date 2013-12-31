@@ -12,7 +12,7 @@ handler = v.ViewHandler()
 
 class TestViewHandler(unittest.TestCase):
 
-	matched_views = dict(handler.views_in_from(sql,given_views))
+	matched_views = dict(handler.query_matched_views(tokenList,given_views))
 	identifier_list = handler.get_identifiers(tokenList)
 	attributes = handler.get_view_attributes(tokenList,matched_views['view1'])
 #---------------------------------------------------------------------------------	
@@ -39,6 +39,12 @@ class TestViewHandler(unittest.TestCase):
 	def test_matched_views_aliases(self):
 		assert(self.matched_views['view1'] == 'v1')
 		assert(self.matched_views['view2'] == 'v2')
+#----------------------------------------------------------------------------------
+	
+	def test_view_exist_in_query(self):
+		assert(handler.view_exist_in_query(tokenList,'view1') == True)
+		assert(handler.view_exist_in_query(tokenList,'view2') == True)
+	
 #----------------------------------------------------------------------------------
 
 	def test_get_identifiers_class(self):

@@ -20,15 +20,21 @@ class TestViewHandler(unittest.TestCase):
 		assert(isinstance(self.matched_views,dict))
 		
 	def test_views_mapping(self):
+		checked = 0
 		for view in self.matched_views.keys():
 			assert(view in given_views)
-			
+			checked+=1
+		assert(checked == len(self.matched_views))
+		
 	def test_view3_not_in_matched_views(self):
 		assert('view3' not in self.matched_views)
 					
 	def test_views_length(self):
-		length = len(self.matched_views)
-		assert(length == 2)
+		checked = 0
+		for view in self.matched_views.keys():
+			if(view in given_views):
+				checked+=1
+		assert(checked == len(self.matched_views))
 	
 	def test_matched_views_aliases(self):
 		assert(self.matched_views['view1'] == 'v1')

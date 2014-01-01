@@ -4,7 +4,7 @@ from sqlparse.experiments import view_handler as v
 import sqlparse
 
 given_views = {'view1':('name','code','A3'),'view2':('code','A2','A3','A4'),'view3':('A1','A2','A4')}
-sql = 'select v1.name as nom,V2.code,count(*) from view1 as v1, view2 as v2 where v1.code like "12345" group by nom;'
+sql = 'select v1.name as nom,view2.code,count(*) from view1 as v1, view2 where v1.code like "12345" group by nom;'
 sql_tokens = sqlparse.parse(sql)[0].tokens
 tokenList = sqlparse.sql.TokenList(sql_tokens)
 
@@ -14,7 +14,8 @@ class TestViewHandler(unittest.TestCase):
 
 	matched_views = dict(handler.query_matched_views(tokenList,given_views))
 	identifier_list = handler.get_identifiers(tokenList)
-	attributes = handler.get_view_attributes(tokenList,matched_views['view1'])
+	aliased_view_attributes = tuple(handler.get_view_attributes(tokenList,matched_views['view1']))
+	view_attributes = list(handler.get_view_attributes(tokenList,'view2' ))
 #---------------------------------------------------------------------------------	
 	def test_views_type(self):
 		assert(isinstance(self.matched_views,dict))
@@ -38,7 +39,7 @@ class TestViewHandler(unittest.TestCase):
 	
 	def test_matched_views_aliases(self):
 		assert(self.matched_views['view1'] == 'v1')
-		assert(self.matched_views['view2'] == 'v2')
+		assert(self.matched_views['view2'] == None)
 #----------------------------------------------------------------------------------
 	
 	def test_view_exist_in_query(self):
@@ -56,18 +57,19 @@ class TestViewHandler(unittest.TestCase):
 	
 #----------------------------------------------------------------------------------	
 	def test_attributes_belong_to_root(self):
-		root_view = given_views[self.matched_views[0]]
-		assert(self.attributes in root_view)
+		root_view = given_views['view1']
+		for attr in self.aliased_view_attributes:
+			assert(attr in root_view)
     
 	def test_attributes_mapping(self):
-		attr1 = self.attributes[0]
-		attr2 = self.attributes[1]
+		attr1 = self.aliased_view_attributes[0]
+		attr2 = self.aliased_view_attributes[1]
 		assert(attr1 == given_views['view1'][0])
 		assert(attr2 == given_views['view1'][1])
         
 	def test_A3_not_in_attributes(self):
 		check_attr = False
-		if('A3' in self.attributes):
+		if('A3' in self.aliased_view_attributes):
 			check_attr = True
 		assert(check_attr == False)
 	

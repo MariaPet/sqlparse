@@ -49,15 +49,23 @@ class ViewHandler(object):
 					elif(identifier.is_group()):
 						identifiers_list=(self.get_identifiers(identifier,identifiers_list))
 		return identifiers_list
-	
-	
-	
-	def get_view_attributes(self,token_list,view):
-		"""returns all the attributes mentioned in a query that belong to a given view"""
-		#parsed=sqlparse.parse(statement)#this a tuple of Statement objects
-		#token_list = sql.TokenList(parsed[0].tokens)
 		
-		    	
+	def get_view_attributes(self,token_list,local_view_name):
+		"""returns all the attributes mentioned in a query that belong to a given view"""
+		#if(self.view_exist_in_query(token_list,view_name) == True):
+		attribute = None 
+		identifiers = self.get_identifiers(token_list)
+		for x,identifier in enumerate(identifiers):
+			id_tokens = sql.TokenList(list(identifier.flatten()))
+			for idx,token in enumerate(id_tokens.tokens):
+				if(token.ttype == tokens.Token.Name and token.value == local_view_name):
+					next_token = id_tokens.token_next(idx)
+					if(next_token == None):
+						continue
+					elif(next_token.ttype == tokens.Token.Punctuation and next_token.value == '.'):
+						attribute = id_tokens.token_next(idx+1)
+						yield attribute.value
+							    	
 class GeneratedView(object):
 
     root=None
@@ -82,18 +90,23 @@ class GeneratedView(object):
             name=self.generate_name()
             attributes=self.get_attributes_from_root(root,query_views_attributes)
             
-            
+#--------------- debugging -----------------------------------           
 test = ViewHandler()
 given_views = {'view1':('A1','A2','A3'),'view2':('A1','A2','A3','A4'),'view3':('A1','A2','A4')}
 sql_test = 'select v1.name as nom,V2.code,count(V2.id) from view1 as v1, view2,sales where v1.code like "12345" group by nom;'
 
 parsed = sqlparse.parse(sql_test)
 tokenlist = sql.TokenList(parsed[0].tokens)
+
 print dict(test.query_matched_views(tokenlist,given_views))
-identifiers = test.get_identifiers(tokenlist)
-for x,token in enumerate(identifiers):
-	print x, " ",token.normalized,' ',token.__class__.__name__
-	
-print test.get_view_attributes(tokenlist,'view1')
+print'\n'
+#identifiers = test.get_identifiers(tokenlist)
+#print 'arithmos identifiers:',len(identifiers)
+#for x,token in enumerate(identifiers):
+#	print x, " ",token.normalized,' ',token.__class__.__name__
+print '\n'	
+
 
 print test.view_exist_in_query(tokenlist,'view1')
+print '\n'
+print list(test.get_view_attributes(tokenlist,'v1'))

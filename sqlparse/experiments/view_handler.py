@@ -36,23 +36,22 @@ class ViewHandler(object):
 								
 								
 			
-	def get_identifiers(self,token_list,identifiers_list=[])	:
-		""" recursive method that fetches identifiers from a token list"""						
+	def get_identifiers(self,token_list,identifiers_tuple=())	:
+		""" recursive method that fetches identifiers from a token list"""					
 		for token in token_list.tokens:
 			if(isinstance(token,sql.Identifier)):
-				identifiers_list.append(token)
+				identifiers_tuple+=(token,)
 			if(token.is_group()):
 				for identifier in token.get_sublists():
 					if(isinstance(identifier,sql.Identifier)):
-						identifiers_list.append(identifier)
-						identifiers_list=(self.get_identifiers(identifier,identifiers_list))
+						identifiers_tuple+=(identifier,)
+						identifiers_tuple=(self.get_identifiers(identifier,identifiers_tuple))
 					elif(identifier.is_group()):
-						identifiers_list=(self.get_identifiers(identifier,identifiers_list))
-		return identifiers_list
+						identifiers_tuple=(self.get_identifiers(identifier,identifiers_tuple))
+		return identifiers_tuple
 		
 	def get_view_attributes(self,token_list,local_view_name):
 		"""returns all the attributes mentioned in a query that belong to a given view"""
-		#if(self.view_exist_in_query(token_list,view_name) == True):
 		attribute = None 
 		identifiers = self.get_identifiers(token_list)
 		for x,identifier in enumerate(identifiers):
@@ -100,13 +99,17 @@ tokenlist = sql.TokenList(parsed[0].tokens)
 
 print dict(test.query_matched_views(tokenlist,given_views))
 print'\n'
-#identifiers = test.get_identifiers(tokenlist)
-#print 'arithmos identifiers:',len(identifiers)
-#for x,token in enumerate(identifiers):
-#	print x, " ",token.normalized,' ',token.__class__.__name__
-print '\n'	
+identifiers = test.get_identifiers(tokenlist)
+print 'arithmos identifiers:',len(identifiers)
+for x,token in enumerate(identifiers):
+	print x, " ",token.normalized,' ',token.__class__.__name__
+print '\n\n'	
 
+identifiers2 = test.get_identifiers(tokenlist)
+print 'arithmos identifiers:',len(identifiers2)
+for x,token in enumerate(identifiers2):
+	print x, " ",token.normalized,' ',token.__class__.__name__
 
 print test.view_exist_in_query(tokenlist,'view1')
 print '\n'
-print list(test.get_view_attributes(tokenlist,'v1'))
+print list(test.get_view_attributes(tokenlist,'V2'))

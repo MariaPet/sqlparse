@@ -33,9 +33,7 @@ class ViewHandler(object):
 								if(view_name == view):
 									exist = True
 		return exist
-								
-								
-			
+											
 	def get_identifiers(self,token_list,identifiers_tuple=())	:
 		""" recursive method that fetches identifiers from a token list"""					
 		for token in token_list.tokens:
@@ -64,7 +62,22 @@ class ViewHandler(object):
 					elif(next_token.ttype == tokens.Token.Punctuation and next_token.value == '.'):
 						attribute = id_tokens.token_next(idx+1)
 						yield attribute.value
-							    	
+						
+	def get_view_predicates(self,token_list,local_view_name):
+		"""generates <Comparison> objects which contain the given view's attributes"""
+		attributes = list(self.get_view_attributes(token_list,local_view_name))
+		for token in token_list.tokens:
+			if(isinstance(token,sql.Where)):
+				for comparison in token.get_sublists():
+					if(isinstance(comparison,sql.Comparison)):
+						for identifier in comparison.get_sublists():
+							if(isinstance(identifier,sql.Identifier)):
+								names = list(identifier.flatten())
+								for idx in range(len(names)):
+									if(names[idx].ttype == tokens.Token.Name and names[idx].value == local_view_name and 
+									(names[idx+2].value in attributes)):
+										yield comparison
+													    	
 class GeneratedView(object):
 
     root=None
@@ -92,7 +105,7 @@ class GeneratedView(object):
 #--------------- debugging -----------------------------------           
 test = ViewHandler()
 given_views = {'view1':('A1','A2','A3'),'view2':('A1','A2','A3','A4'),'view3':('A1','A2','A4')}
-sql_test = 'select v1.name as nom,V2.code,count(V2.id) from view1 as v1, view2,sales where v1.code like "12345" group by nom;'
+sql_test = 'select v1.name as nom,V2.code,count(V2.id) from view1 as v1, view2,sales where v1.code = sales.code group by nom;'
 
 parsed = sqlparse.parse(sql_test)
 tokenlist = sql.TokenList(parsed[0].tokens)
@@ -113,3 +126,6 @@ for x,token in enumerate(identifiers2):
 print test.view_exist_in_query(tokenlist,'view1')
 print '\n'
 print list(test.get_view_attributes(tokenlist,'V2'))
+
+print '\n'
+print list(test.get_view_predicates(tokenlist,'v1'))

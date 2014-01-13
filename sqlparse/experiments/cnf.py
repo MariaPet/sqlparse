@@ -4,6 +4,8 @@ from sympy.logic.boolalg import to_cnf
 import sqlparse
 from sqlparse import sql,tokens
 
+import re
+
 def where_to_cnf(where_token):
 	#clause = sql.TokenList(where_token.tokens[1:-1])
 	symbols = ('A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z')
@@ -27,13 +29,13 @@ def where_to_cnf(where_token):
 		if(subtokens[tok_idx].ttype == tokens.Token.Punctuation and subtokens[tok_idx].value in '()'):
 			trans_form += subtokens[tok_idx].value
 		#logical operators handling
-		elif(subtokens[tok_idx].ttype == tokens.Token.Keyword and subtokens[tok_idx].normalized in ('NOT','AND','OR')):
-			if(subtokens[tok_idx].normalized == 'NOT'):
-				trans_form += '~'
+		elif(subtokens[tok_idx].ttype == tokens.Token.Keyword and subtokens[tok_idx].normalized in ('NOT','AND','OR') or subtokens[tok_idx].value == 'not' ):
+			if(subtokens[tok_idx].normalized == 'OR'):
+				trans_form += '|'
 			elif(subtokens[tok_idx].normalized == 'AND'):
 				trans_form += '&'
 			else:
-				trans_form += '|'
+				trans_form += '~'
 			
 		#comparisons handling
 		elif(subtokens[tok_idx].ttype == tokens.Token.Operator.Comparison):
@@ -72,8 +74,37 @@ def where_to_cnf(where_token):
 			sym_idx +=1
 		
 		tok_idx += 1
-	print 'arxiki formula',trans_form 
-	print 'cnf : ', to_cnf(trans_form)	
+	print 'arxiki formula',trans_form , 'cnf : ',to_cnf(trans_form).__str__()
+	print 'kati' ,sympylogic_to_symbolic(to_cnf(trans_form).__str__())	
+
+
+
+def sympylogic_to_symbolic(sympy_logic_str):
+	predicates = re.findall(r'\([A-Z], [A-Z]\)|~\([A-Z], [A-Z]\)', sympy_logic_str)
+	symbolic = ''
+	print 'sympylogic'
+	if len(predicates) == 1:
+		symbols =  re.findall(r'[A-Z]', predicates[0])
+		for x in range(len(symbols)):
+			if(x == (len(symbols)-1)):
+				symbolic += symbols[x]
+			else:
+				symbolic += symbols[x]+' & '
+	else:
+		for i in range(len(predicates)):
+			symbols =  re.findall(r'~[A-Z]|[A-Z]', predicates[i])
+			symbolic += '('
+			for x in range(len(symbols)):
+				if(x == (len(symbols)-1)):
+					symbolic += symbols[x]
+				else:
+					symbolic += symbols[x]+' | '
+			if(i == (len(predicates)-1)):
+				symbolic += ')'
+			else:
+				symbolic += ')&'
+	return symbolic
+
 	
 #--------------------------debugging-----------------------
 sql_test = 'select v1.name as nom,V2.code,count(V2.id) from view1 as v1, view2 as V2 where (v1.code="12345" and v1.id<>2.9) or not( v1.id!=v2.id and v2.stuff=0) group by nom;'

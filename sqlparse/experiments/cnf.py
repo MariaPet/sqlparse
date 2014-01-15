@@ -75,40 +75,61 @@ def where_to_cnf(where_token):
 		
 		tok_idx += 1
 	print 'arxiki formula',trans_form , 'cnf : ',to_cnf(trans_form).__str__()
-	print 'kati' ,sympylogic_to_symbolic(to_cnf(trans_form).__str__())	
+	print sympylogic_to_symbolic(to_cnf(trans_form).__str__())	
 
 
 
 def sympylogic_to_symbolic(sympy_logic_str):
-	predicates = re.findall(r'\([A-Z], [A-Z]\)|~\([A-Z], [A-Z]\)', sympy_logic_str)
-	symbolic = ''
-	print 'sympylogic'
-	if len(predicates) == 1:
-		symbols =  re.findall(r'[A-Z]', predicates[0])
-		for x in range(len(symbols)):
-			if(x == (len(symbols)-1)):
-				symbolic += symbols[x]
+	symbolic_form = ''
+	
+	#Transform negations from Not(S) to ~S
+	reg = re.compile('Not\([A-Z]\)')
+	negations = reg.findall(sympy_logic_str)
+	if(len(negations)>0):
+		for negative in negations:
+			symbols = re.findall(r'(?!Not)[A-Z]', negative)
+			print 'negatives stin arxiki formula: ',symbols
+			for symbol in symbols:
+				sympy_logic_str = sympy_logic_str.replace(negative, '~'+symbol);
+				
+	#If it is in simple cnf already return the clause
+	reg = re.compile('^And\((~?[A-Z],?\s?)*\)')
+	cnf = reg.match(sympy_logic_str)
+	print sympy_logic_str
+	if(cnf is not None):
+		print 'cnf>0',cnf.group(),' klasi tis cnf ',cnf.__class__.__name__
+		sym = re.findall(r'(?!And)~?[A-Z]', cnf.group())
+		for i,sy in enumerate(sym):
+			if(i == (len(sym)-1)):
+				symbolic_form += sy
 			else:
-				symbolic += symbols[x]+' & '
-	else:
-		for i in range(len(predicates)):
-			symbols =  re.findall(r'~[A-Z]|[A-Z]', predicates[i])
-			symbolic += '('
-			for x in range(len(symbols)):
-				if(x == (len(symbols)-1)):
-					symbolic += symbols[x]
+				symbolic_form += sy+' & '
+	
+	#if not in cnf
+	disjunctions =  re.findall(r'Or\(~?\w,?\s?~?\w\)', sympy_logic_str)
+	print disjunctions
+	if(len(disjunctions)>0):
+		isymbolic_form = ''
+		for x,dis in enumerate(disjunctions):
+			symbolic_form += '('
+			symbols = re.findall(r'(?<!\w)~?\w(?!\w)',dis)
+			print symbols
+			for i,symbol in enumerate(symbols):
+				if(i == (len(symbols)-1)):
+					symbolic_form += symbol
 				else:
-					symbolic += symbols[x]+' | '
-			if(i == (len(predicates)-1)):
-				symbolic += ')'
-			else:
-				symbolic += ')&'
-	return symbolic
+					symbolic_form += symbol+' | '
+			symbolic_form += ')'
+			if(len(disjunctions)>1 and x!=len(disjunctions)-1):
+				symbolic_form += ' & '
+	print symbolic_form
+	
 
 	
 #--------------------------debugging-----------------------
-sql_test = 'select v1.name as nom,V2.code,count(V2.id) from view1 as v1, view2 as V2 where (v1.code="12345" and v1.id<>2.9) or not( v1.id!=v2.id and v2.stuff=0) group by nom;'
-#sql_test='select * from v1 where (v1.id!=123 or v1.id=v2.name) and not(v1.name="kati" or v1.code=g.kati);'
+#sql_test = 'select v1.name as nom,V2.code,count(V2.id) from view1 as v1, view2 as V2 where (v1.code="12345" and v1.id<>2.9) or not( v1.id!=v2.id and v2.stuff=0) group by nom;'
+sql_test='select * from v1 where (v1.id!=123 or not v1.id=v2.name) and (v1.name="kati" or v1.code=g.kati);'
+#sql_test = 'select * from t where  v1=10 or not v2=5'
 parsed=sqlparse.parse(sql_test)
 for where in parsed[0].tokens:
 	if(isinstance(where,sql.Where)):

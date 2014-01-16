@@ -79,7 +79,7 @@ class ViewHandler(object):
 										yield comparison
 	
 	def get_pushed_predicate(self,token_list,local_view_name):
-		"""returns a <Where> object containing the pushed predicates"""
+		"""returns a <Comparison> object containing the pushed predicates"""
 		comparisons = list(self.get_view_predicates(token_list,local_view_name))
 		for comparison in comparisons:
 			if( (isinstance(comparison.left,sql.Identifier) and (comparison.right.ttype in tokens.Token.Literal.Number)) or(isinstance(comparison.right,sql.Identifier) and (comparison.left.ttype in tokens.Token.Literal.Number)) ):
@@ -110,33 +110,34 @@ class GeneratedView(object):
 			name=self.generate_name()
 			attributes=self.get_attributes_from_root(root,query_views_attributes)
             
-#--------------- debugging -----------------------------------           
-test = ViewHandler()
-given_views = {'view1':('A1','A2','A3'),'view2':('A1','A2','A3','A4'),'view3':('A1','A2','A4')}
-sql_test = 'select v1.name as nom,V2.code,count(V2.id) from view1 as v1, view2,sales where v1.code = 2 group by nom;'
-
-parsed = sqlparse.parse(sql_test)
-tokenlist = sql.TokenList(parsed[0].tokens)
-
-print dict(test.query_matched_views(tokenlist,given_views))
-print'\n'
-identifiers = test.get_identifiers(tokenlist)
-print 'arithmos identifiers:',len(identifiers)
-for x,token in enumerate(identifiers):
-	print x, " ",token.normalized,' ',token.__class__.__name__
-print '\n\n'	
-
-identifiers2 = test.get_identifiers(tokenlist)
-print 'arithmos identifiers:',len(identifiers2)
-for x,token in enumerate(identifiers2):
-	print x, " ",token.normalized,' ',token.__class__.__name__
-
-print test.view_exist_in_query(tokenlist,'view1')
-print '\n'
-print list(test.get_view_attributes(tokenlist,'V2'))
-
-print '\n'
-print list(test.get_view_predicates(tokenlist,'v1'))
-
-print '\n'
-print test.get_pushed_predicate(tokenlist,'v1')
+#--------------- debugging -----------------------------------
+if __name__ == "__main__":           
+	test = ViewHandler()
+	given_views = {'view1':('A1','A2','A3'),'view2':('A1','A2','A3','A4'),'view3':('A1','A2','A4')}
+	sql_test = 'select v1.name as nom,V2.code,count(V2.id) from view1 as v1, view2,sales where v1.code = 2 group by nom;'
+	
+	parsed = sqlparse.parse(sql_test)
+	tokenlist = sql.TokenList(parsed[0].tokens)
+	
+	print dict(test.query_matched_views(tokenlist,given_views))
+	print'\n'
+	identifiers = test.get_identifiers(tokenlist)
+	print 'arithmos identifiers:',len(identifiers)
+	for x,token in enumerate(identifiers):
+		print x, " ",token.normalized,' ',token.__class__.__name__
+	print '\n\n'	
+	
+	identifiers2 = test.get_identifiers(tokenlist)
+	print 'arithmos identifiers:',len(identifiers2)
+	for x,token in enumerate(identifiers2):
+		print x, " ",token.normalized,' ',token.__class__.__name__
+	
+	print test.view_exist_in_query(tokenlist,'view1')
+	print '\n'
+	print list(test.get_view_attributes(tokenlist,'V2'))
+	
+	print '\n'
+	print list(test.get_view_predicates(tokenlist,'v1'))
+	
+	print '\n'
+	print test.get_pushed_predicate(tokenlist,'v1')

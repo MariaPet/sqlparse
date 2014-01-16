@@ -162,10 +162,11 @@ def sympylogic_to_symbolic(sympy_logic_str):
 
 	
 #--------------------------debugging-----------------------
-#sql_test = 'select v1.name as nom,V2.code,count(V2.id) from view1 as v1, view2 as V2 where (v1.code="12345" and v1.id<>2.9) or not( v1.id!=v2.id and v2.stuff=0) group by nom;'
-sql_test='select * from v1 where not(v1.id!=123 or  v1.id=v2.name) and (v1.name="kati" or v1.code=g.kati);'
-#sql_test = 'select * from t where  (v1=10 and not v2=5)'
-parsed=sqlparse.parse(sql_test)
-for where in parsed[0].tokens:
-	if(isinstance(where,sql.Where)):
-		print where_to_cnf(where)
+if __name__ == "__main__":
+	#sql_test = 'select v1.name as nom,V2.code,count(V2.id) from view1 as v1, view2 as V2 where (v1.code="12345" and v1.id<>2.9) or not( v1.id!=v2.id and v2.stuff=0) group by nom;'
+	sql_test='select * from v1 where not(v1.id!=123 or  v1.id=v2.name) and (v1.name="kati" or v1.code=g.kati);'
+	#sql_test = 'select * from t where  (v1=10 and not v2=5)'
+	parsed=sqlparse.parse(sql_test)
+	for where in parsed[0].tokens:
+		if(isinstance(where,sql.Where)):
+			print where_to_cnf(where)

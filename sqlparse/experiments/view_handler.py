@@ -10,6 +10,7 @@ class ViewHandler(object):
 		for idx,token in enumerate(token_list.tokens):
 			if(idx>0):
 				previous = token_list.token_prev(idx)
+				#In case there are multiple view or table names in a query from clause
 				if(previous.normalized == 'FROM' and previous.ttype==tokens.Token.Keyword):
 					if(isinstance(token,sql.IdentifierList)):
 						for subtoken in token.get_sublists():
@@ -20,6 +21,7 @@ class ViewHandler(object):
 									view_alias = subtoken.get_alias()
 								if(view_name in given_views):
 									yield view_name.__str__(),view_alias
+					#In case there is just one view or table names in a query from clause
 					if(isinstance(token,sql.Identifier)):
 						view_alias = None
 						view_name = token.get_real_name()
@@ -72,10 +74,42 @@ class ViewHandler(object):
 						attribute = id_tokens.token_next(idx+1)
 						yield attribute.value
 						
-	def get_view_predicates(self,token_list,local_view_name):
+	def get_view_predicates(self,where,local_view_name,attributes):
 		"""generates <Comparison> objects which contain the given view's attributes"""
-		attributes = list(self.get_view_attributes(token_list,local_view_name))
-		for token in token_list.tokens:
+		tok_idx = 0
+		subtokens = list(where.flatten())
+		n=len(subtokens)
+		
+		while (tok_idx < n):
+			#comparisons handling
+			if(subtokens[tok_idx].ttype == tokens.Token.Operator.Comparison):
+				comparison_group = ''
+				left = subtokens[:tok_idx]
+				left = left[::-1]
+				for i in range(len(left)):
+					if(left[i].ttype == tokens.Token.Name and left[i+1].value =='.' and left[i+2].ttype == tokens.Token.Name):
+						comparison_group += left[i+2].value+left[i+1].value+left[i].value
+						break;
+					elif(left[i].ttype in tokens.Token.Literal):
+						comparison_group += left[i].value
+						break;
+				comparison_group += subtokens[tok_idx].value		
+				right = subtokens[tok_idx+1:]
+				for i in range(len(right)):
+					if(i == len(right)-1):
+						comparison_group += right[i].value
+						break;
+					else:
+						if(right[i].ttype == tokens.Token.Name and right[i+1].value =='.' and right[i+2].ttype == tokens.Token.Name):
+							comparison_group += right[i].value+right[i+1].value+right[i+2].value 
+							break;
+						elif(right[i].ttype in tokens.Token.Literal):
+							comparison_group += right[i].value
+							break;
+				yield comparison_group
+			tok_idx +=1
+		
+		"""for token in token_list.tokens:
 			if(isinstance(token,sql.Where)):
 				for comparison in token.get_sublists():
 					if(isinstance(comparison,sql.Comparison)):
@@ -85,14 +119,14 @@ class ViewHandler(object):
 								for idx in range(len(names)):
 									if(names[idx].ttype == tokens.Token.Name and names[idx].value == local_view_name and 
 									(names[idx+2].value in attributes)):
-										yield comparison
+										yield comparison"""
 	
-	def get_pushed_predicate(self,token_list,local_view_name):
+	def get_pushed_predicate(self,where,local_view_name,attributes):
 		"""returns a <Comparison> object containing the pushed predicates"""
-		comparisons = list(self.get_view_predicates(token_list,local_view_name))
-		for comparison in comparisons:
-			if( (isinstance(comparison.left,sql.Identifier) and (comparison.right.ttype in tokens.Token.Literal.Number)) or(isinstance(comparison.right,sql.Identifier) and (comparison.left.ttype in tokens.Token.Literal.Number)) ):
-				return comparison
+		comparisons = list(self.get_view_predicates(where,local_view_name,attributes))
+		#for comparison in comparisons:
+			#if( (isinstance(comparison.left,sql.Identifier) and (comparison.right.ttype in tokens.Token.Literal.Number)) or(isinstance(comparison.right,sql.Identifier) and (comparison.left.ttype in tokens.Token.Literal.Number)) ):
+				#return comparison
 				
 								    	
 class GeneratedView(object):
@@ -144,10 +178,12 @@ if __name__ == "__main__":
 	
 	print test.view_exist_in_query(tokenlist,'view1')
 	print '\n'
-	print list(test.get_view_attributes(tokenlist,'V2'))
+	attributes= list(test.get_view_attributes(tokenlist,'V1'))
+	print attributes
+	
+	for token in parsed[0].tokens:
+		if(isinstance(token,sql.Where)):
+			print list(test.get_view_predicates(token,'V1',attributes))
 	
 	print '\n'
-	print list(test.get_view_predicates(tokenlist,'v1'))
-	
-	print '\n'
-	print test.get_pushed_predicate(tokenlist,'v1')
+	print test.get_pushed_predicate(tokenlist,'V1',attributes)

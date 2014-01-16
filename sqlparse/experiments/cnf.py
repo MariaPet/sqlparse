@@ -26,7 +26,7 @@ def where_to_cnf(where_token):
 	while (tok_idx < n and sym_idx < 24):
 	
 		#print tok_idx, ' ' ,subtokens[tok_idx].ttype,' ',subtokens[tok_idx].normalized,' ' 
-		if subtokens[tok_idx].ttype in  tokens.Token.Literal: print 'einai kai literal'
+		#if subtokens[tok_idx].ttype in  tokens.Token.Literal: print 'einai kai literal'
 		
 		#whitespace handling
 		if(subtokens[tok_idx].ttype == tokens.Token.Text.Whitespace):
@@ -82,13 +82,13 @@ def where_to_cnf(where_token):
 					elif(right[i].ttype in tokens.Token.Literal):
 						comparison_group += right[i].value
 						break;
-			print " ".join(str(comp) for comp in comparison_group)
+			#print " ".join(str(comp) for comp in comparison_group)
 			comparisons[symbols[sym_idx]] = comparison_group
 			trans_form += symbols[sym_idx]
 			sym_idx +=1
 		
 		tok_idx += 1
-	print 'arxiki formula',trans_form , 'cnf : ',to_cnf(trans_form).__str__()
+	#print 'arxiki formula',trans_form , 'cnf : ',to_cnf(trans_form).__str__()
 	cnf = sympylogic_to_symbolic(to_cnf(trans_form).__str__())	
 	cnf_where_clause = 'where '
 	for c in cnf:
@@ -103,8 +103,8 @@ def where_to_cnf(where_token):
 			cnf_where_clause += comparisons[c]
 		else:
 			cnf_where_clause += ' '
-		print c,
-	return cnf_where_clause
+		#print c,
+	return cnf_where_clause+';'
 
 
 
@@ -119,7 +119,7 @@ def sympylogic_to_symbolic(sympy_logic_str):
 			symbols = re.findall(r'(?!Not)[A-Z]', negative)
 			#print 'negatives stin arxiki formula: ',symbols
 			for symbol in symbols:
-				sympy_logic_str = sympy_logic_str.replace(negative, '~'+symbol);
+				sympy_logic_str = sympy_logic_str.replace(negative, '~'+symbol)
 				
 	#If it is in simple cnf already return the clause.This check is possibly unnecessary
 	"""conjunctions = re.findall(r'And\((?:~?[A-Z],?\s?)*\)',sympy_logic_str)
@@ -155,7 +155,7 @@ def sympylogic_to_symbolic(sympy_logic_str):
 		for comma in commas:
 			sympy_logic_str = sympy_logic_str.replace(comma,' &')
 	sympy_logic_str = re.sub('And', '', sympy_logic_str)
-	print 'Teliki morfi se cnf : ',sympy_logic_str
+	#print 'Teliki morfi se cnf : ',sympy_logic_str
 	return sympy_logic_str
 	
 

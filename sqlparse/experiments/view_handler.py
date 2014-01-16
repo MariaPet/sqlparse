@@ -8,17 +8,26 @@ class ViewHandler(object):
 		"""returns the views that exist in the from clause of the query
 		and also in the given views dictionary"""
 		for idx,token in enumerate(token_list.tokens):
-			if(isinstance(token,sql.IdentifierList)):
+			if(idx>0):
 				previous = token_list.token_prev(idx)
 				if(previous.normalized == 'FROM' and previous.ttype==tokens.Token.Keyword):
-					for subtoken in token.get_sublists():
-						if(isinstance(subtoken,sql.Identifier)):
-							view_alias = None
-							view_name = subtoken.get_real_name()
-							if(subtoken.has_alias()):
-								view_alias = subtoken.get_alias()
-							if(view_name in given_views):
-								yield view_name.__str__(),view_alias
+					if(isinstance(token,sql.IdentifierList)):
+						for subtoken in token.get_sublists():
+							if(isinstance(subtoken,sql.Identifier)):
+								view_alias = None
+								view_name = subtoken.get_real_name()
+								if(subtoken.has_alias()):
+									view_alias = subtoken.get_alias()
+								if(view_name in given_views):
+									yield view_name.__str__(),view_alias
+					if(isinstance(token,sql.Identifier)):
+						view_alias = None
+						view_name = token.get_real_name()
+						if(token.has_alias()):
+							view_alias = token.get_alias()
+						if(view_name in given_views):
+							yield view_name.__str__(),view_alias
+			
 								
 	def view_exist_in_query(self,token_list,view):
 		"""returns True if the specified view is found in the from clause of the query"""
@@ -113,13 +122,14 @@ class GeneratedView(object):
 #--------------- debugging -----------------------------------
 if __name__ == "__main__":           
 	test = ViewHandler()
-	given_views = {'view1':('A1','A2','A3'),'view2':('A1','A2','A3','A4'),'view3':('A1','A2','A4')}
-	sql_test = 'select v1.name as nom,V2.code,count(V2.id) from view1 as v1, view2,sales where v1.code = 2 group by nom;'
+	given_views = {'View1':('A1','A2','A3'),'view2':('A1','A2','A3','A4'),'view3':('A1','A2','A4')}
+	#sql_test = 'select v1.name as nom,V2.code,count(V2.id) from View1 as v1,view2 where v1.code = 2 group by nom;'
+	sql_test = 'Select * from View1 as V1 where (V1.name="Maria" and V1.surname="Petriti") or not(V1.name!="Nikos" and V1.surname!="Tades");'
 	
 	parsed = sqlparse.parse(sql_test)
 	tokenlist = sql.TokenList(parsed[0].tokens)
 	
-	print dict(test.query_matched_views(tokenlist,given_views))
+	print dict(test.query_matched_views(parsed[0],given_views))
 	print'\n'
 	identifiers = test.get_identifiers(tokenlist)
 	print 'arithmos identifiers:',len(identifiers)

@@ -31,6 +31,7 @@ occurrences = dict(handler.query_matched_views(parsed_sql[0],given_views))
 #print occurrences
 
 #Fetching of the given view attributes in the query
+
 attr_in_query = {}
 for view in occurrences.keys():
 	if(occurrences[view] == None):
@@ -40,5 +41,12 @@ for view in occurrences.keys():
 	print attr_in_query
 
 #Fetching of predicates related to a given view	
-predicates_in_query = {}
-	
+for where_clause in parsed_sql[0].tokens:
+	if(isinstance(where_clause,sql.Where)):
+		predicates_in_query = {}
+		for view in occurrences.keys():
+			if(occurrences[view] == None):
+				predicates_in_query[view] = tuple(set(handler.get_pushed_predicate(where_clause,view,attr_in_query[view]))) 
+			else:
+				predicates_in_query[occurrences[view]] = tuple(set(handler.get_pushed_predicate(where_clause,occurrences[view],attr_in_query[occurrences[view]])))
+print 'Predicates to be pushed ', predicates_in_query

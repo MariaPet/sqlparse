@@ -140,31 +140,56 @@ class ViewHandler(object):
 			#if( (isinstance(comparison.left,sql.Identifier) and (comparison.right.ttype in tokens.Token.Literal.Number)) or(isinstance(comparison.right,sql.Identifier) and (comparison.left.ttype in tokens.Token.Literal.Number)) ):
 				#return comparison
 				
+	def generated_query(self,sql_query,views,generated_views):
+		pass
+	
 								    	
 class GeneratedView(object):
 
-	root=None
-	name=None
-	attributes=[]
+	__slots__ = ('root', 'name', 'attributes', 'predicates', 'temp_view_attributes')
 
-	def root_exists(self,given_views,query_views):
-		return False
-
-	def get_root(self,given_views):
-		pass
-
-	def generate_name(self):
-		pass
-
-	def get_attributes_from_root(parent,query_views_attributes):
-		pass
-
-	def __init__(self,given_views,query_views,query_views_attributes):
-		if(self.root_exists(given_views,query_views)):
-			root=self.get_root(given_views)
-			name=self.generate_name()
-			attributes=self.get_attributes_from_root(root,query_views_attributes)
-            
+	def __init__(self,root,query_view_attributes,query_view_predicates):
+			self.root = root
+			self.name = 'temp_'+self.root
+			self.attributes = query_view_attributes
+			self.predicates = query_view_predicates
+			
+	def temp_view_query(self):
+		attr_creation = list(self.attributes)
+		if(attr_creation[0] in self.predicates[0]): print'douleuei swsta'
+		selected_attributes = ''
+		predicate = ''
+		for i,attr in enumerate(self.attributes):
+			if(i == len(self.attributes)-1):
+				selected_attributes += attr+''
+			else:
+				selected_attributes += attr+', '
+				
+			for j,pred in enumerate(self.predicates):
+				if('.'+attr in pred):
+					attr_creation.remove(attr) 
+		for j,pred in enumerate(self.predicates):
+			if(j == len(self.predicates)-1):
+				predicate += pred+''
+			else:
+				predicate += pred+' and '			
+		self.temp_view_attributes = '('
+		for x,attr in enumerate(attr_creation):
+			if(x == len(attr_creation)-1):
+				self.temp_view_attributes += attr+')'
+			else:
+				self.temp_view_attributes += attr+', '	
+		if(predicate != ""):
+			where_clause = "WHERE "+predicate
+		else:
+			where_clause = ''
+		create_view = 'kati'
+		create_view = 'CREATE VIEW '+self.name+' '+self.temp_view_attributes+' AS SELECT '+selected_attributes+' FROM '+self.root + ' '+where_clause;
+		return create_view
+	
+	
+		
+           
 #--------------- debugging -----------------------------------
 if __name__ == "__main__":           
 	test = ViewHandler()

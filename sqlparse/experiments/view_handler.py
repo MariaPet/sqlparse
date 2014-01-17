@@ -1,5 +1,6 @@
 from sqlparse import sql,tokens
 import sqlparse
+import re
 
 
 class ViewHandler(object):
@@ -72,7 +73,7 @@ class ViewHandler(object):
 						continue
 					elif(next_token.ttype == tokens.Token.Punctuation and next_token.value == '.'):
 						attribute = id_tokens.token_next(idx+1)
-						yield attribute.value
+						yield attribute.value.encode('ascii','replace')
 						
 	def get_view_predicates(self,where,local_view_name,attributes):
 		"""generates <Comparison> objects which contain the given view's attributes"""
@@ -106,7 +107,7 @@ class ViewHandler(object):
 						elif(right[i].ttype in tokens.Token.Literal):
 							comparison_group += right[i].value
 							break;
-				yield comparison_group
+				yield comparison_group.encode('ascii','replace')
 			tok_idx +=1
 		
 		"""for token in token_list.tokens:
@@ -124,7 +125,18 @@ class ViewHandler(object):
 	def get_pushed_predicate(self,where,local_view_name,attributes):
 		"""returns a <Comparison> object containing the pushed predicates"""
 		comparisons = list(self.get_view_predicates(where,local_view_name,attributes))
-		#for comparison in comparisons:
+		for comparison in comparisons:
+			print comparison
+			pushed = re.findall(r'(.*\..*=".*")|(?:.*\..*=\d*,?\.?(\d?)*)',comparison)
+			print pushed
+			if(pushed!=[]):
+				yield pushed[0][0]
+			else:
+				yield None
+			
+		
+		
+		
 			#if( (isinstance(comparison.left,sql.Identifier) and (comparison.right.ttype in tokens.Token.Literal.Number)) or(isinstance(comparison.right,sql.Identifier) and (comparison.left.ttype in tokens.Token.Literal.Number)) ):
 				#return comparison
 				
@@ -158,7 +170,7 @@ if __name__ == "__main__":
 	test = ViewHandler()
 	given_views = {'View1':('A1','A2','A3'),'view2':('A1','A2','A3','A4'),'view3':('A1','A2','A4')}
 	#sql_test = 'select v1.name as nom,V2.code,count(V2.id) from View1 as v1,view2 where v1.code = 2 group by nom;'
-	sql_test = 'Select * from View1 as V1 where (V1.name="Maria" and V1.surname="Petriti") or not(V1.name!="Nikos" and V1.surname!="Tades");'
+	sql_test = 'Select * from View1 as V1 where (V1.name=V1.A1 and V1.surname="Petriti") or not(V1.name!="Nikos" and V1.surname!="Tades");'
 	
 	parsed = sqlparse.parse(sql_test)
 	tokenlist = sql.TokenList(parsed[0].tokens)
@@ -186,4 +198,4 @@ if __name__ == "__main__":
 			print list(test.get_view_predicates(token,'V1',attributes))
 	
 	print '\n'
-	print test.get_pushed_predicate(tokenlist,'V1',attributes)
+	print list(test.get_pushed_predicate(tokenlist,'V1',attributes))

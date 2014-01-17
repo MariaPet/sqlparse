@@ -29,7 +29,7 @@ class ViewHandler(object):
 						if(token.has_alias()):
 							view_alias = token.get_alias()
 						if(view_name in given_views):
-							yield view_name.__str__(),view_alias
+							yield view_name.__str__(),view_alias.__str__().encode('ascii','replace')
 			
 								
 	def view_exist_in_query(self,token_list,view):
@@ -124,15 +124,15 @@ class ViewHandler(object):
 	
 	def get_pushed_predicate(self,where,local_view_name,attributes):
 		"""returns a <Comparison> object containing the pushed predicates"""
-		comparisons = list(self.get_view_predicates(where,local_view_name,attributes))
+		comparisons = tuple(self.get_view_predicates(where,local_view_name,attributes))
 		for comparison in comparisons:
-			print comparison
+			#print comparison.__class__.__name__
 			pushed = re.findall(r'(.*\..*=".*")|(?:.*\..*=\d*,?\.?(\d?)*)',comparison)
-			print pushed
-			if(pushed!=[]):
-				yield pushed[0][0]
-			else:
-				yield None
+			predicate = pushed[0][0]
+			if(len(pushed)>0 ):
+				predicate = pushed[0][0]
+				if(local_view_name in predicate):
+					yield predicate
 			
 		
 		

@@ -95,6 +95,10 @@ class ViewHandler(object):
 				left = subtokens[:tok_idx]
 				left = left[::-1]
 				for i in range(len(left)):
+					if(left[i].value.upper() == 'NOT'):
+						comparison_group += left[i].value.upper()+' '
+						break;
+				for i in range(len(left)):
 					if(left[i].ttype == tokens.Token.Name and left[i+1].value =='.' and left[i+2].ttype == tokens.Token.Name):
 						comparison_group += left[i+2].value+left[i+1].value+left[i].value
 						break;

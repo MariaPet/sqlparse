@@ -41,14 +41,14 @@ def where_to_cnf(where_token):
 			if(subtokens[tok_idx].normalized == 'OR'):
 				trans_form += '|'
 				if('|' not in operators.keys()):
-					operators['|'] = subtokens[tok_idx]
+					operators['|'] = subtokens[tok_idx].value.upper()
 			elif(subtokens[tok_idx].normalized == 'AND'):
 				trans_form += '&'
 				if('&' not in operators.keys()):
-					operators['&'] = subtokens[tok_idx]
+					operators['&'] = subtokens[tok_idx].value.upper()
 			else:
 				if('~' not in operators.keys()):
-					operators['~'] = subtokens[tok_idx]
+					operators['~'] = subtokens[tok_idx].value.upper()
 				trans_form += '~'
 			
 		#comparisons handling
@@ -96,9 +96,9 @@ def where_to_cnf(where_token):
 			cnf_where_clause += c
 		elif(c in operators):
 			if(c == '~'):
-				cnf_where_clause += operators[c].value+' '
+				cnf_where_clause += operators[c]+' '
 			else:
-				cnf_where_clause += operators[c].value
+				cnf_where_clause += operators[c]
 		elif(c in comparisons):
 			cnf_where_clause += comparisons[c]
 		else:

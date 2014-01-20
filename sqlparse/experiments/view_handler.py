@@ -60,20 +60,27 @@ class ViewHandler(object):
 						identifiers_tuple=(self.get_identifiers(identifier,identifiers_tuple))
 		return identifiers_tuple
 		
-	def get_view_attributes(self,token_list,local_view_name):
+	def get_view_attributes(self,token_list,local_view_name,local_view_attributes):
 		"""returns all the attributes mentioned in a query that belong to a given view"""
 		attribute = None 
-		identifiers = self.get_identifiers(token_list)
-		for x,identifier in enumerate(identifiers):
-			id_tokens = sql.TokenList(list(identifier.flatten()))
-			for idx,token in enumerate(id_tokens.tokens):
-				if(token.ttype == tokens.Token.Name and token.value == local_view_name):
-					next_token = id_tokens.token_next(idx)
-					if(next_token == None):
-						continue
-					elif(next_token.ttype == tokens.Token.Punctuation and next_token.value == '.'):
-						attribute = id_tokens.token_next(idx+1)
-						yield attribute.value.encode('ascii','replace')
+		for x,token in enumerate(token_list.tokens):
+			if(token.ttype == tokens.Token.Wildcard and token.value == '*' and token_list.token_prev(x).normalized == 'SELECT'):
+				for attribute in local_view_attributes:
+					yield attribute	
+		else:
+			identifiers = self.get_identifiers(token_list)
+			for x,identifier in enumerate(identifiers):
+				id_tokens = sql.TokenList(list(identifier.flatten()))
+				for idx,token in enumerate(id_tokens.tokens):
+					if(token.ttype == tokens.Token.Name and token.value == local_view_name):
+						next_token = id_tokens.token_next(idx)
+						if(next_token == None):
+							continue
+						elif(next_token.ttype == tokens.Token.Punctuation and next_token.value == '.'):
+							attribute = id_tokens.token_next(idx+1)
+							yield attribute.value.encode('ascii','replace')
+		#check for the case of an asterisk wild card
+		
 						
 	def get_view_predicates(self,where,local_view_name,attributes):
 		"""generates <Comparison> objects which contain the given view's attributes"""
@@ -156,7 +163,6 @@ class GeneratedView(object):
 			
 	def temp_view_query(self):
 		attr_creation = list(self.attributes)
-		if(attr_creation[0] in self.predicates[0]): print'douleuei swsta'
 		selected_attributes = ''
 		predicate = ''
 		for i,attr in enumerate(self.attributes):
@@ -166,7 +172,7 @@ class GeneratedView(object):
 				selected_attributes += attr+', '
 				
 			for j,pred in enumerate(self.predicates):
-				if('.'+attr in pred):
+				if('.'+attr in pred and attr in attr_creation):
 					attr_creation.remove(attr) 
 		for j,pred in enumerate(self.predicates):
 			if(j == len(self.predicates)-1):

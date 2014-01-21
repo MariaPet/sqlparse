@@ -156,20 +156,21 @@ class ViewHandler(object):
 		
 		
 	def get_pushed_predicates(self,where,local_view_name,attributes,actual_view_name=None):
-		normalized = where._to_string().replace(local_view_name+'.',actual_view_name+'.')
-		cnf_clause = re.findall(r'\(.*\)',normalized)
+		if(actual_view_name!=None):
+			normalized = where._to_string().replace(local_view_name+'.',actual_view_name+'.')
+			cnf_clause = re.findall(r'\(.*\)',normalized)
+		else:
+			cnf_clause = re.findall(r'\(.*\)',where._to_string())
 		
 		for predicate in cnf_clause:
 			#handles multiple predicates, by stripping the outer parentheses
 			complex_formula = re.findall(r'(?<=\()\(.*\)(?=\))',predicate)
 			if(len(complex_formula)>0):
 				for disj in complex_formula:
-					print 'complex formula',disj
 					#A complex formula contains multiple conjunctions of disjunctions. We have to retrieve these disjunctions
 					disjunctions = disj.split(' AND ');
 					#disjunctions = re.findall(r'(?:\(.*\)(?= AND))|(?:(?<=AND )\(.*\))',disj)
 					for x in range(len(disjunctions)):
-						print 'single disjunction', disjunctions[x]
 						pushed = disjunctions[x]
 						for comparison in self.get_view_predicates(where,local_view_name,attributes,actual_view_name):
 							if (comparison in disjunctions[x]):
@@ -224,10 +225,14 @@ class GeneratedView(object):
 		return create_view
 	
 	def transformed_query(self,old_sql,root_alias=None):
+		if(root_alias != None):
+			old_sql = old_sql.replace(root_alias,self.root)
 		for predicate in self.predicates:
 			if(predicate in old_sql):
 				old_sql = old_sql.replace(predicate, '')
-		if(root_allias == None)
+		old_sql = old_sql.replace(self.root,self.name)
+		if(root_alias != None):
+			old_sql = old_sql.replace(self.name+' AS '+self.name,self.name)
 		new_sql = old_sql
 		return new_sql           
 #--------------- debugging -----------------------------------

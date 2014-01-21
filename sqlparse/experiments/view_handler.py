@@ -82,7 +82,7 @@ class ViewHandler(object):
 		#check for the case of an asterisk wild card
 		
 						
-	def get_view_predicates(self,where,local_view_name,attributes):
+	def get_view_predicates(self,where,local_view_name,attributes,actual_view_name=None):
 		"""generates <Comparison> objects which contain the given view's attributes"""
 		tok_idx = 0
 		subtokens = list(where.flatten())
@@ -99,9 +99,13 @@ class ViewHandler(object):
 						comparison_group += left[i].value.upper()+' '
 						break;
 				for i in range(len(left)):
-					if(left[i].ttype == tokens.Token.Name and left[i+1].value =='.' and left[i+2].ttype == tokens.Token.Name):
-						comparison_group += left[i+2].value+left[i+1].value+left[i].value
-						break;
+					if(left[i].value in attributes and left[i+1].value =='.' and left[i+2].value == local_view_name ):
+						if(actual_view_name == None):
+							comparison_group += left[i+2].value+left[i+1].value+left[i].value
+							break;
+						else:
+							comparison_group += actual_view_name+left[i+1].value+left[i].value
+							break;
 					elif(left[i].ttype in tokens.Token.Literal):
 						comparison_group += left[i].value
 						break;
@@ -112,9 +116,13 @@ class ViewHandler(object):
 						comparison_group += right[i].value
 						break;
 					else:
-						if(right[i].ttype == tokens.Token.Name and right[i+1].value =='.' and right[i+2].ttype == tokens.Token.Name):
-							comparison_group += right[i].value+right[i+1].value+right[i+2].value 
-							break;
+						if(right[i].value == local_view_name and right[i+1].value =='.' and right[i+2].value in attributes):
+							if(actual_view_name == None):
+								comparison_group += right[i].value+right[i+1].value+right[i+2].value 
+								break;
+							else:
+								comparison_group += actual_view_name+right[i+1].value+right[i+2].value 
+								break;
 						elif(right[i].ttype in tokens.Token.Literal):
 							comparison_group += right[i].value
 							break;
@@ -133,8 +141,8 @@ class ViewHandler(object):
 									(names[idx+2].value in attributes)):
 										yield comparison"""
 	
-	def get_pushed_predicate(self,where,local_view_name,attributes):
-		"""returns a <Comparison> object containing the pushed predicates"""
+	"""def get_pushed_predicate(self,where,local_view_name,attributes):
+		returns a <Comparison> object containing the pushed predicates
 		comparisons = tuple(self.get_view_predicates(where,local_view_name,attributes))
 		for comparison in comparisons:
 			#print comparison.__class__.__name__
@@ -143,63 +151,85 @@ class ViewHandler(object):
 			if(len(pushed)>0 ):
 				predicate = pushed[0][0]
 				if(local_view_name in predicate):
-					yield predicate
+					yield predicate"""
 			
 		
 		
+	def get_pushed_predicates(self,where,local_view_name,attributes,actual_view_name=None):
+		normalized = where._to_string().replace(local_view_name+'.',actual_view_name+'.')
+		cnf_clause = re.findall(r'\(.*\)',normalized)
 		
-			#if( (isinstance(comparison.left,sql.Identifier) and (comparison.right.ttype in tokens.Token.Literal.Number)) or(isinstance(comparison.right,sql.Identifier) and (comparison.left.ttype in tokens.Token.Literal.Number)) ):
-				#return comparison
-				
-	def generated_query(self,sql_query,views,generated_views):
-		pass
+		for predicate in cnf_clause:
+			#handles multiple predicates, by stripping the outer parentheses
+			complex_formula = re.findall(r'(?<=\()\(.*\)(?=\))',predicate)
+			if(len(complex_formula)>0):
+				for disj in complex_formula:
+					print 'complex formula',disj
+					#A complex formula contains multiple conjunctions of disjunctions. We have to retrieve these disjunctions
+					disjunctions = disj.split(' AND ');
+					#disjunctions = re.findall(r'(?:\(.*\)(?= AND))|(?:(?<=AND )\(.*\))',disj)
+					for x in range(len(disjunctions)):
+						print 'single disjunction', disjunctions[x]
+						pushed = disjunctions[x]
+						for comparison in self.get_view_predicates(where,local_view_name,attributes,actual_view_name):
+							if (comparison in disjunctions[x]):
+								pushed = pushed.replace(comparison, '')
+						get_pushed = re.findall(r'\((?:\s*OR\s*)+\)',pushed)
+						if(len(get_pushed)>0):
+							
+							yield disjunctions[x].encode('ascii','replace')
 	
 								    	
 class GeneratedView(object):
 
-	__slots__ = ('root', 'name', 'attributes', 'predicates', 'temp_view_attributes')
+	__slots__ = ('root', 'root_attributes', 'name', 'attributes', 'predicates')
 
 	def __init__(self,root,query_view_attributes,query_view_predicates):
 			self.root = root
 			self.name = 'temp_'+self.root
-			self.attributes = query_view_attributes
+			self.root_attributes = query_view_attributes
 			self.predicates = query_view_predicates
+			self.attributes = ()
 			
 	def temp_view_query(self):
-		attr_creation = list(self.attributes)
+		self.attributes = list(self.root_attributes)
 		selected_attributes = ''
 		predicate = ''
-		for i,attr in enumerate(self.attributes):
-			if(i == len(self.attributes)-1):
+		for i,attr in enumerate(self.root_attributes):
+			"""if(i == len(self.root_attributes)-1):
 				selected_attributes += attr+''
 			else:
-				selected_attributes += attr+', '
+				selected_attributes += attr+', '"""
 				
 			for j,pred in enumerate(self.predicates):
-				if('.'+attr in pred and attr in attr_creation):
-					attr_creation.remove(attr) 
+				if('.'+attr in pred and attr in self.attributes):
+					self.attributes.remove(attr) 
 		for j,pred in enumerate(self.predicates):
 			if(j == len(self.predicates)-1):
 				predicate += pred+''
 			else:
-				predicate += pred+' and '			
-		self.temp_view_attributes = '('
-		for x,attr in enumerate(attr_creation):
-			if(x == len(attr_creation)-1):
-				self.temp_view_attributes += attr+')'
+				predicate += pred+' AND '			
+		temp_view_attributes = ''
+		for x,attr in enumerate(self.attributes):
+			if(x == len(self.attributes)-1):
+				temp_view_attributes += attr+''
 			else:
-				self.temp_view_attributes += attr+', '	
+				temp_view_attributes += attr+', '	
 		if(predicate != ""):
 			where_clause = "WHERE "+predicate
 		else:
 			where_clause = ''
 		create_view = 'kati'
-		create_view = 'CREATE VIEW '+self.name+' '+self.temp_view_attributes+' AS SELECT '+selected_attributes+' FROM '+self.root + ' '+where_clause;
+		create_view = 'CREATE VIEW '+self.name+' ('+temp_view_attributes+') AS SELECT '+self.root+'.'+temp_view_attributes+' FROM '+self.root + ' '+where_clause;
 		return create_view
 	
-	
-		
-           
+	def transformed_query(self,old_sql,root_alias=None):
+		for predicate in self.predicates:
+			if(predicate in old_sql):
+				old_sql = old_sql.replace(predicate, '')
+		if(root_allias == None)
+		new_sql = old_sql
+		return new_sql           
 #--------------- debugging -----------------------------------
 if __name__ == "__main__":           
 	test = ViewHandler()

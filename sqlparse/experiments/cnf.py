@@ -90,7 +90,7 @@ def where_to_cnf(where_token):
 		tok_idx += 1
 	#print 'arxiki formula',trans_form , 'cnf : ',to_cnf(trans_form).__str__()
 	cnf = sympylogic_to_symbolic(to_cnf(trans_form).__str__())	
-	cnf_where_clause = 'where '
+	cnf_where_clause = 'WHERE '
 	for c in cnf:
 		if(c in parentheses):
 			cnf_where_clause += c

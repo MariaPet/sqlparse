@@ -11,6 +11,7 @@ from sqlparse.pipeline import Pipeline
 from sqlparse.tokens import (Comment, Comparison, Keyword, Name, Punctuation,
                              String, Whitespace)
 from sqlparse.utils import memoize_generator
+from sqlparse.utils import split_unquoted_newlines
 
 
 # --------------------------
@@ -301,7 +302,7 @@ class ReindentFilter:
     def _split_kwds(self, tlist):
         split_words = ('FROM', 'STRAIGHT_JOIN$', 'JOIN$', 'AND', 'OR',
                        'GROUP', 'ORDER', 'UNION', 'VALUES',
-                       'SET', 'BETWEEN')
+                       'SET', 'BETWEEN', 'EXCEPT')
 
         def _next_token(i):
             t = tlist.token_next_match(i, T.Keyword, split_words,
@@ -534,10 +535,8 @@ class SerializerUnicode:
 
     def process(self, stack, stmt):
         raw = unicode(stmt)
-        add_nl = raw.endswith('\n')
-        res = '\n'.join(line.rstrip() for line in raw.splitlines())
-        if add_nl:
-            res += '\n'
+        lines = split_unquoted_newlines(raw)
+        res = '\n'.join(line.rstrip() for line in lines)
         return res
 
 

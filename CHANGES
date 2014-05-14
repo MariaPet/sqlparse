@@ -1,13 +1,33 @@
-Development
------------
+Development Version
+-------------------
+
+Bug Fixes
+* Fix handling of NULL keywords in aliased identifiers.
+* Fix SerializerUnicode to split unquoted newlines (issue131, by Michael Schuller).
+
+Enhancements
+* Improve parsing of identifier lists containing placeholders.
+
+
+Release 0.1.11 (Feb 07, 2014)
+-----------------------------
 
 Bug Fixes
 * Fix incorrect parsing of string literals containing line breaks (issue118).
+* Fix typo in keywords, add MERGE, COLLECT keywords (issue122/124,
+  by Cristian Orellana).
+* Improve parsing of string literals in columns.
+* Fix parsing and formatting of statements containing EXCEPT keyword.
+* Fix Function.get_parameters() (issue126/127, by spigwitmer).
 
 Enhancements
 * Classify DML keywords (issue116, by Victor Hahn).
 * Add missing FOREACH keyword.
 * Grouping of BEGIN/END blocks.
+
+Other
+* Python 2.5 isn't automatically tested anymore, neither Travis nor Tox
+  still support it out of the box.
 
 
 Release 0.1.10 (Nov 02, 2013)

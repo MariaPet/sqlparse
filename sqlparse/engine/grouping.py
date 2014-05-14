@@ -117,6 +117,8 @@ def group_as(tlist):
         return not token.ttype in (T.DML, T.DDL)
 
     def _left_valid(token):
+        if token.ttype is T.Keyword and token.value in ('NULL'):
+            return True
         return token.ttype is not T.Keyword
 
     _group_left_right(tlist, T.Keyword, 'AS', sql.Identifier,
@@ -134,7 +136,7 @@ def group_comparison(tlist):
     def _parts_valid(token):
         return (token.ttype in (T.String.Symbol, T.Name, T.Number,
                                 T.Number.Integer, T.Literal,
-                                T.Literal.Number.Integer)
+                                T.Literal.Number.Integer, T.Name.Placeholder)
                 or isinstance(token, (sql.Identifier, sql.Parenthesis))
                 or (token.ttype is T.Keyword
                     and token.value.upper() in ['NULL', ]))
@@ -157,6 +159,7 @@ def group_identifier(tlist):
             lambda y: (y.ttype in (T.String.Symbol,
                                    T.Name,
                                    T.Wildcard,
+                                   T.Literal.String.Single,
                                    T.Literal.Number.Integer,
                                    T.Literal.Number.Float)
                        or isinstance(y, (sql.Parenthesis, sql.Function)))))
@@ -232,6 +235,7 @@ def group_identifier_list(tlist):
                    lambda t: t.ttype == T.Keyword,
                    lambda t: isinstance(t, sql.Comparison),
                    lambda t: isinstance(t, sql.Comment),
+                   lambda t: t.ttype == T.Comment.Multiline,
                    ]
     tcomma = tlist.token_next_match(idx, T.Punctuation, ',')
     start = None
@@ -296,7 +300,7 @@ def group_where(tlist):
      if not isinstance(sgroup, sql.Where)]
     idx = 0
     token = tlist.token_next_match(idx, T.Keyword, 'WHERE')
-    stopwords = ('ORDER', 'GROUP', 'LIMIT', 'UNION')
+    stopwords = ('ORDER', 'GROUP', 'LIMIT', 'UNION', 'EXCEPT')
     while token:
         tidx = tlist.token_index(token)
         end = tlist.token_next_match(tidx + 1, T.Keyword, stopwords)

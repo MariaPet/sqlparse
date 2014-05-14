@@ -97,7 +97,6 @@ def formula_to_cnf(where_token):
             cnf_where_clause += comparisons[c]
         else:
             cnf_where_clause += ' '
-        print 'o xaraktiras ',c
     return cnf_where_clause+';'
 
 

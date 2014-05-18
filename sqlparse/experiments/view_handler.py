@@ -209,6 +209,21 @@ class GeneratedView(object):
         for predicate in self.predicates:
             if(predicate in old_sql):
                 old_sql = old_sql.replace(predicate, '')
+        parsed = sqlparse.parse(old_sql)[0]
+        empty_where = True
+        for token in parsed.tokens:
+            if(isinstance(token,sql.Where)):
+                where_subtokens = tuple(token.flatten())
+                for subtoken in where_subtokens:
+                    if(subtoken.ttype == tokens.Comparison or subtoken.ttype == tokens.Name):
+                        empty_where = false
+                        print "kanei to where non empty "+subtoken
+        if(empty_where):
+            for idx,token in enumerate(parsed.tokens):
+                if(isinstance(token,sql.Where)):
+                    parsed.tokens[idx] = sql.Token(tokens.Whitespace,' ')
+                    print "where: "+token.__str__()
+        old_sql = parsed.__str__()
         old_sql = old_sql.replace(self.root,self.name)
         if(root_alias != None):
             old_sql = old_sql.replace(self.name+' AS '+self.name,self.name)

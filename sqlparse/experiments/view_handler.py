@@ -130,12 +130,10 @@ class ViewHandler(object):
                         elif(right[i].ttype in tokens.Token.Literal):
                             comparison_group += right[i].value
                             break;
-                print 'to comparsion group pou epistrefei i get view predicates'
                 yield comparison_group.encode('ascii','replace')
             tok_idx +=1
 
     def get_pushed_predicates(self,where,local_view_name,attributes,actual_view_name=None): 
-        print'mpainei stin get_pushed_predicates'
         if(actual_view_name!=None):
             normalized = where._to_string().replace(local_view_name+'.',actual_view_name+'.')
             cnf_clause = re.findall(r'\(.*\)',normalized)
@@ -147,19 +145,16 @@ class ViewHandler(object):
             if(len(complex_formula)>0):
                 for disj in complex_formula:
                     #A complex formula contains multiple conjunctions of disjunctions. We have to retrieve these disjunctions
-                    disjunctions = disj.split(' AND ');
-                    print disjunctions
+                    disjunction_predicates = disj.split(' AND ');
                     #disjunctions = re.findall(r'(?:\(.*\)(?= AND))|(?:(?<=AND )\(.*\))',disj)
-                    for x in range(len(disjunctions)):
-                        pushed = disjunctions[x]
-                        print 'pushed :'+pushed
+                    for x in range(len(disjunction_predicates)):
+                        pushed = disjunction_predicates[x]
                         for comparison in self.get_view_predicates(where,local_view_name,attributes,actual_view_name):
-                            print comparison
-                            if (comparison in disjunctions[x]):
+                            if (comparison in disjunction_predicates[x]):
                                 pushed = pushed.replace(comparison, '')
                         get_pushed = re.findall(r'\((?:\s*OR\s*)+\)',pushed)
                         if(len(get_pushed)>0):
-                            yield disjunctions[x].encode('ascii','replace')
+                            yield disjunction_predicates[x].encode('ascii','replace')
 
 class GeneratedView(object):
 
@@ -181,7 +176,6 @@ class GeneratedView(object):
                     selected_attributes += attr+''
                 else:
                     selected_attributes += attr+', '"""
-
             for j,pred in enumerate(self.predicates):
                 if('.'+attr in pred and attr in self.attributes):
                     self.attributes.remove(attr) 
@@ -203,7 +197,7 @@ class GeneratedView(object):
         create_view = 'CREATE VIEW '+self.name+' ('+temp_view_attributes+') AS SELECT '+self.root+'.'+temp_view_attributes+' FROM '+self.root + ' '+where_clause;
         return create_view
 
-    def transformed_query(self,old_sql,root_alias=None):
+    def transformed_query(self,old_sql,root_alias = None):
         if(root_alias != None):
             old_sql = old_sql.replace(root_alias,self.root)
         for predicate in self.predicates:
@@ -221,14 +215,16 @@ class GeneratedView(object):
         if(empty_where):
             for idx,token in enumerate(parsed.tokens):
                 if(isinstance(token,sql.Where)):
-                    parsed.tokens[idx] = sql.Token(tokens.Whitespace,' ')
-                    print "where: "+token.__str__()
-        old_sql = parsed.__str__()
+                    parsed.tokens.remove(token)
+        subtokens = tuple(parsed.flatten())
+        if(subtokens[-1].value != ';'):
+            subtokens = subtokens+(sql.Token(tokens.Punctuation,';'),)
+        old_sql = sql.TokenList(subtokens).__str__()
         old_sql = old_sql.replace(self.root,self.name)
         if(root_alias != None):
             old_sql = old_sql.replace(self.name+' AS '+self.name,self.name)
         new_sql = old_sql
-        return new_sql           
+        return new_sql
 #--------------- debugging -----------------------------------
 if __name__ == "__main__":           
 	test = ViewHandler()

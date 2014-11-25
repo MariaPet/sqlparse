@@ -4,12 +4,13 @@ from sqlparse import sql, tokens
 
 given_views = {'View1':('id','name','surname'),'View2':('id','department','area','supervisor'),'View3':('id','type','salary')}
 #sql_query = 'Select * from View1 as V1 where (V1.name="Maria" and V1.surname="Petriti");'
-#sql_query = 'Select * from View1 AS V1 where (V1.name="Maria" and V1.surname="Petriti") or (V1.name!="Nikos" and V1.surname!="Tades");'
-sql_query = 'Select V1.name,V1.id,View2.department from View1 as V1, View2 where (V1.name="Maria" and V1.surname="Petriti") or not(View2.area!="Athens" and View2.supervisor!="Tades");'
+sql_query = 'Select * from View1 AS V1, View2 AS V2 where (V1.name=V2.supervisor and V1.surname="Petriti") or (V1.id!=V2.id and V1.surname!="Tades");'
+#sql_query = 'Select V1.name,V1.id,View2.department from View1 as V1, View2 where (V1.name="Maria" and V1.surname="Petriti") or not(View2.area!="Athens" and View2.supervisor!="Tades");'
 #sql_query = 'Select * from sales where sales.name=5 or sales.surname=9;'
 sql_query = sqlparse.format(sql_query,keyword_case='upper')
 parsed_sql = sqlparse.parse(sql_query);
-print 'Arxiko query : ',sql_query
+print 'Given views: ',given_views,'\n'
+print 'Initial query : ',sql_query,'\n'
 #Convertion to cnf
 for where in parsed_sql[0].tokens:
 	if(isinstance(where,sql.Where)):
@@ -18,7 +19,7 @@ for where in parsed_sql[0].tokens:
 		cnf_formula = cnf.where_to_cnf(where)
 		#print cnf_formula
 		sql_query = sql_query.replace(where_str, cnf_formula)
-		print 'Query me cnf : ',sql_query
+		print 'Query with predicates in CNF : ',sql_query,'\n'
 
 #Parsing of the converted query one more time
 parsed_sql = sqlparse.parse(sql_query);
@@ -40,26 +41,28 @@ for view in occurrences.keys():
 		attr_in_query[occurrences[view]] = tuple(set(handler.get_view_attributes(parsed_sql[0],occurrences[view],given_views[view])))
 		
 #Fetching of predicates related to a given view	
+predicates_in_query = {}
 for where_clause in parsed_sql[0].tokens:
 	if(isinstance(where_clause,sql.Where)):
-		predicates_in_query = {}
+		#predicates_in_query = {}
 		for view in occurrences.keys():
 			if(occurrences[view] == None):
 				predicates_in_query[view] = tuple(set(handler.get_pushed_predicates(where_clause,view,attr_in_query[view]))) 
 			else:
 				predicates_in_query[occurrences[view]] = tuple(set(handler.get_pushed_predicates(where_clause,occurrences[view],attr_in_query[occurrences[view]],view)))
-print 'pushed predicates',predicates_in_query
+print 'Predicates to be pushed : ',predicates_in_query,'\n'
 
 #Generating query for creating the temporary view
 #new_view = GeneratedView()
 
 if(len(occurrences)>0):
-	for view in occurrences.keys():
-		if(occurrences[view] == None):
+    #inverted_occurences = {v: k for k, v in occurrences.items()}
+    for view in occurrences.keys():
+        if(occurrences[view] == None):
 			new_view = VH.GeneratedView(view,attr_in_query[view],predicates_in_query[view])
-			print new_view.temp_view_query()
-			print new_view.transformed_query(sql_query)
-		else:
+			print 'Create view statement for temporary view : ',new_view.temp_view_query(),'\n'
+			print 'Transformed query : ',new_view.transformed_query(sql_query),'\n'
+        else:
 			new_view = VH.GeneratedView(view,attr_in_query[occurrences[view]],predicates_in_query[occurrences[view]])
-			print new_view.temp_view_query()
-			print new_view.transformed_query(sql_query,occurrences[view])
+			print 'Create view statement for temporary view : ',new_view.temp_view_query(),'\n'
+			print 'Transformed query : ', new_view.transformed_query(sql_query,occurrences[view]),'\n'

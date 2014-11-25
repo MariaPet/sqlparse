@@ -210,8 +210,8 @@ class GeneratedView(object):
                 where_subtokens = tuple(token.flatten())
                 for subtoken in where_subtokens:
                     if(subtoken.ttype == tokens.Comparison or subtoken.ttype == tokens.Name):
-                        empty_where = false
-                        print "kanei to where non empty "+subtoken
+                        empty_where = False
+                        #print "kanei to where non empty "+subtoken
         if(empty_where):
             for idx,token in enumerate(parsed.tokens):
                 if(isinstance(token,sql.Where)):
